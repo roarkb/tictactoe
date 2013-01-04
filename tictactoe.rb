@@ -7,7 +7,7 @@ POSITIONS = %w[ a1 a2 a3 b1 b2 b3 c1 c2 c3 ]
 EXIT_MSG = "\n\nyou just can't seem to take tic-tac-toe seriously!\n\n"
 
 def ask(question, a, b)
-  print "#{question} (#{a}/#{b}) "
+  print "#{question} (#{a}/#{b})> "
   r = $stdin.gets.strip
 
   4.times do
