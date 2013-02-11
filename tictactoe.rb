@@ -6,6 +6,9 @@ E = " "
 POSITIONS = %w[ a1 a2 a3 b1 b2 b3 c1 c2 c3 ]
 EXIT_MSG = "\n\nyou just can't seem to take tic-tac-toe seriously!\n\n"
 
+$state = [ E, E, E, E, E, E, E, E, E ]
+$piece = { :player => X, :computer => O }
+
 def ask(question, a, b)
   print "#{question} (#{a}/#{b})> "
   r = $stdin.gets.strip
@@ -21,20 +24,75 @@ def ask(question, a, b)
   r
 end
 
-def board(a)
-  "
+# display board with current game state
+def board
+  s = $state
+  
+  puts "
       1   2   3
 
-  a   #{a[0]} | #{a[1]} | #{a[2]}
+  a   #{s[0]} | #{s[1]} | #{s[2]}
      ---+---+---
-  b   #{a[3]} | #{a[4]} | #{a[5]}
+  b   #{s[3]} | #{s[4]} | #{s[5]}
      ---+---+---
-  c   #{a[6]} | #{a[7]} | #{a[8]}
+  c   #{s[6]} | #{s[7]} | #{s[8]}
   "
 end
 
 def write(pos, char)
   $state[POSITIONS.index(pos)] = char
+end
+
+def state_to_grid
+  s = $state
+
+  [ 
+    [ s[0], s[1], s[2] ], 
+    [ s[3], s[4], s[5] ], 
+    [ s[6], s[7], s[8] ]
+  ]
+end
+
+# assume player is X until chosen otherwise
+def choose_sides
+  if ask("Choose a side", "x", "o") == "o"
+    $piece[:player] = O
+    $piece[:computer] = X
+  end
+end
+
+def end_game
+  winner = nil
+  wins = [ 
+    [ 0, 1, 2 ],
+    [ 3, 4, 5 ],
+    [ 6, 7, 8 ],
+    [ 0, 3, 6 ],
+    [ 1, 4, 7 ],
+    [ 2, 5, 8 ],
+    [ 0, 4, 8 ],
+    [ 2, 4, 6 ]
+  ]
+  
+  wins.each do |e|
+    case [ $state[e[0]], $state[e[1]], $state[e[2]] ]
+    when [ X, X, X ]
+      winner = $piece.invert[X]
+    when [ O, O, O ]
+      winner = $piece.invert[O]
+    end
+  end
+
+  case winner
+  when :player
+    abort "\n!!! You Win !!!\n\n"
+  when :computer
+    abort "\n!!! Computer Wins !!!\n\n"
+  end
+
+  if $state.include?(E) == false
+    abort "\n!!! Stalemate !!!\n\n"
+  end
 end
 
 def player_move
@@ -59,38 +117,44 @@ def player_move
 
   abort EXIT_MSG unless v == 1
 
-  write(move, $player_char)
+  write(move, $piece[:player])
+  board
+  end_game
 end
 
 def computer_move
-
+  # ...
+  board
+  end_game
 end
 
-# MAIN
+def main
+  unless ARGV[0] == "debug"
+    system("clear")
+    puts "\n  Welcome\n\n"
+    sleep 1
+    puts "     To\n\n"
+    sleep 1
+    puts "  T | I | C\n ---+---+---\n  T | A | C\n ---+---+---\n  T | O | E\n\n"
+    sleep 1
+  end
+    
+  choose_sides
 
-unless ARGV[0] == "debug"
-  system("clear")
-  puts "\n  Welcome\n\n"
-  sleep 1
-  puts "     To\n\n"
-  sleep 1
-  puts "  T | I | C\n ---+---+---\n  T | A | C\n ---+---+---\n  T | O | E\n\n"
-  sleep 1
+  case ask("Do you wish to go first", "yes", "no")
+  when "yes"
+    board
+    
+    loop do
+      player_move
+      computer_move
+    end
+  when "no"
+    loop do
+      computer_move
+      player_move
+    end
+  end
 end
 
-case ask("Choose a side", "x", "o")
-when "x"
-  $player_char = X
-  $computer_char = O
-when "o"
-  $player_char = O
-  $computer_char = X
-end
-
-$player_first = ask("Do you wish to go first", "yes", "no")
-
-$state = [ E, E, E, E, E, E, E, E, E ]
-puts board($state)
-
-player_move
-puts board($state)
+main
