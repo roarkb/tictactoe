@@ -5,6 +5,16 @@ O = "O"
 E = " "
 POSITIONS = %w[ a1 a2 a3 b1 b2 b3 c1 c2 c3 ]
 EXIT_MSG = "\n\nyou just can't seem to take tic-tac-toe seriously!\n\n"
+WINS = [ 
+  [ 0, 1, 2 ],
+  [ 3, 4, 5 ],
+  [ 6, 7, 8 ],
+  [ 0, 3, 6 ],
+  [ 1, 4, 7 ],
+  [ 2, 5, 8 ],
+  [ 0, 4, 8 ],
+  [ 2, 4, 6 ]
+]
 
 $state = [ E, E, E, E, E, E, E, E, E ]
 $piece = { :player => X, :computer => O }
@@ -61,20 +71,10 @@ def choose_sides
   end
 end
 
-def end_game
+def check_for_winner
   winner = nil
-  wins = [ 
-    [ 0, 1, 2 ],
-    [ 3, 4, 5 ],
-    [ 6, 7, 8 ],
-    [ 0, 3, 6 ],
-    [ 1, 4, 7 ],
-    [ 2, 5, 8 ],
-    [ 0, 4, 8 ],
-    [ 2, 4, 6 ]
-  ]
   
-  wins.each do |e|
+  WINS.each do |e|
     case [ $state[e[0]], $state[e[1]], $state[e[2]] ]
     when [ X, X, X ]
       winner = $piece.invert[X]
@@ -93,6 +93,20 @@ def end_game
   if $state.include?(E) == false
     abort "\n!!! Stalemate !!!\n\n"
   end
+end
+
+# return any 3rd coordinates needed to complete 3 in a row
+def two_to_win(char) # X or O
+  moves = []
+
+  WINS.each do |e|
+    row = [ $state[e[0]], $state[e[1]], $state[e[2]] ]
+    if row.count(char) == 2 && row.count(E) == 1
+      moves.push(POSITIONS[e[row.index(E)]])
+    end
+  end
+
+  moves.uniq
 end
 
 def player_move
@@ -119,13 +133,25 @@ def player_move
 
   write(move, $piece[:player])
   board
-  end_game
+  check_for_winner
 end
 
 def computer_move
-  # ...
+  # if computer goes first then make random move
+  if $state.uniq.to_s == E
+    write(POSITIONS[rand(POSITIONS.length)], $piece[:computer])
+  end
+
+  # go for the win?
+  
+  # keep player from winning?
+
+  # go for random 2 in a row?
+  
+  # else make random move
+
   board
-  end_game
+  check_for_winner
 end
 
 def main
@@ -157,4 +183,4 @@ def main
   end
 end
 
-main
+#main
