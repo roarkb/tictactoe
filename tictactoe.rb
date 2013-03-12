@@ -53,6 +53,12 @@ def write(pos, char)
   $state[POSITIONS.index(pos)] = char
 end
 
+# return random element from array
+# Array.sample not supported until ruby 1.9
+def random(array)
+  array[rand(array.length)]
+end
+
 def state_to_grid
   s = $state
 
@@ -137,15 +143,27 @@ def player_move
 end
 
 def computer_move
+  has_moved = false
+  c = $piece[:computer]
+  p = $piece[:player]
+
   # if computer goes first then make random move
   if $state.uniq.to_s == E
-    write(POSITIONS[rand(POSITIONS.length)], $piece[:computer])
+    write(random(POSITIONS), c)
   end
 
   # go for the win?
-  
+  moves = two_to_win(c)
+  if moves.length > 0
+    write(random(moves), c)
+  end 
+ 
   # keep player from winning?
-
+  moves = two_to_win(p)
+  if moves.length > 0
+    write(random(moves), p)
+  end 
+  
   # go for random 2 in a row?
   
   # else make random move
