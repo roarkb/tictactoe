@@ -143,30 +143,38 @@ def player_move
 end
 
 def computer_move
-  has_moved = false
   c = $piece[:computer]
   p = $piece[:player]
 
-  # if computer goes first then make random move
-  if $state.uniq.to_s == E
-    write(random(POSITIONS), c)
-  end
+  while true
+    # this is redundant
+    # if computer goes first then make random move
+    #if $state.uniq.to_s == E
+    #  write(random(POSITIONS), c)
+    #  break
+    #end
 
-  # go for the win?
-  moves = two_to_win(c)
-  if moves.length > 0
-    write(random(moves), c)
-  end 
- 
-  # keep player from winning?
-  moves = two_to_win(p)
-  if moves.length > 0
-    write(random(moves), p)
-  end 
-  
-  # go for random 2 in a row?
-  
-  # else make random move
+    # go for the win?
+    moves = two_to_win(c)
+    if moves.length > 0
+      write(random(moves), c)
+      break
+    end 
+   
+    # keep player from winning?
+    moves = two_to_win(p)
+    if moves.length > 0
+      write(random(moves), c)
+      break
+    end 
+    
+    # go for random 2 in a row?
+    # TODO: ...
+
+    # else make random move
+    # TODO: get list of available moves
+    break
+  end
 
   board
   check_for_winner
@@ -201,4 +209,4 @@ def main
   end
 end
 
-#main
+main
