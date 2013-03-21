@@ -1,10 +1,48 @@
 #!/usr/bin/env ruby
 
+ARG1 = ARGV[0]
+ARG2 = ARGV[1]
+SCORES = ".scores"
+
+SCORES_FH = File.open(SCORES, "a")
+
+# end all games with this
+def close_exit
+  SCORES_FH.close
+  exit
+end
+
+if ARG1 == "help" || ARG1 == "info"
+  puts %Q{  
+   USAGE: '#{__FILE__} <optional arg1> <optional arg2>'
+  
+  arg1:
+    "skip"      => skip intro
+    "player"    => skip intro, choose X and go first
+    "computer"  => skip intro, choose X and computer goes first
+    "help/info" => this menu
+
+  arg2:
+    "debug" => display computer stats
+
+  "end/exit/e" will end the game
+  }
+
+  close_exit
+end
+
+if ARG1 == "reset"
+  SCORES_FH.close
+  File.delete(SCORES)
+  exit
+end
+
 X = "X"
 O = "O"
 E = " "
 POSITIONS = %w[ a1 a2 a3 b1 b2 b3 c1 c2 c3 ]
 EXIT_MSG = "\n\nyou just can't seem to take tic-tac-toe seriously!\n\n"
+GOODBYE_MSG = "\n\nGoodbye :(\n\n"
 WINS = [ 
   [ 0, 1, 2 ],
   [ 3, 4, 5 ],
@@ -18,6 +56,15 @@ WINS = [
 
 $state = [ E, E, E, E, E, E, E, E, E ]
 $piece = { :player => X, :computer => O }
+$tally = { # for computer AI strategies
+  "block fork1"                => 0,
+  "block fork2"                => 0,
+  "win"                       => 0,
+  "block player win"          => 0,
+  "two in a row"              => 0,
+  "block player two in a row" => 0,
+  "random"                    => 0,
+}
 
 def ask(question, a, b)
   print "#{question} (#{a}/#{b})> "
@@ -30,7 +77,11 @@ def ask(question, a, b)
     end
   end
 
-  abort EXIT_MSG unless r == a or r == b
+  unless r == a or r == b
+    puts EXIT_MSG
+    close_exit
+  end
+
   r
 end
 
@@ -49,25 +100,30 @@ def board
   "
 end
 
-def write(pos, char)
+def write(pos, char) # example: ("a1", $piece[:player])
+  # TODO: ensure write to an empty space
   $state[POSITIONS.index(pos)] = char
 end
 
 # return random element from array
-# Array.sample not supported until ruby 1.9
+# (Array.sample not supported until ruby 1.9)
 def random(array)
   array[rand(array.length)]
 end
 
-def state_to_grid
-  s = $state
+# map WINS to current $state
+# TODO: refactor everything to use this
+def state_wins
+  sw = []
+  
+  WINS.each do |e|
+    sw.push([ $state[e[0]], $state[e[1]], $state[e[2]] ])
+  end
 
-  [ 
-    [ s[0], s[1], s[2] ], 
-    [ s[3], s[4], s[5] ], 
-    [ s[6], s[7], s[8] ]
-  ]
+  sw
 end
+
+# TODO: add method to help translate coordinates to positions?
 
 # assume player is X until chosen otherwise
 def choose_sides
@@ -77,11 +133,25 @@ def choose_sides
   end
 end
 
+def stats
+  puts "\n      computer stats:\n  --+------------"
+  # TODO: sort by ...something
+  $tally.each { |k,v| puts "  #{v} | #{k}" }
+  puts
+end
+#stats
+
+def end_game(msg)
+  puts "\n!!! #{msg} !!!\n\n"
+  stats if ARG2 == "debug"
+  close_exit
+end
+
 def check_for_winner
   winner = nil
   
-  WINS.each do |e|
-    case [ $state[e[0]], $state[e[1]], $state[e[2]] ]
+  state_wins.each do |e|
+    case e
     when [ X, X, X ]
       winner = $piece.invert[X]
     when [ O, O, O ]
@@ -91,19 +161,34 @@ def check_for_winner
 
   case winner
   when :player
-    abort "\n!!! You Win !!!\n\n"
+    end_game("You Win")
   when :computer
-    abort "\n!!! Computer Wins !!!\n\n"
+    end_game("Computer Wins")
   end
 
-  if $state.include?(E) == false
-    abort "\n!!! Stalemate !!!\n\n"
+  # is it a draw?
+  # TODO: detect draw even sooner
+  draw_count = 0
+  
+  state_wins.each do |e|
+    if e.count(X) > 0 && e.count(O) > 0
+      draw_count += 1
+    end
   end
+  
+  end_game("Draw") if draw_count == 8
 end
 
 # return any 3rd coordinates needed to complete 3 in a row
-def two_to_win(char) # X or O
+def one_to_win(char) # X or O
   moves = []
+  
+  # TODO: this causes computer to overwrite existing spot!?
+  #state_wins.each do |e|
+  #  if e.count(char) == 2 && e.count(E) == 1
+  #    moves.push(POSITIONS[e.index(E)])
+  #  end
+  #end
 
   WINS.each do |e|
     row = [ $state[e[0]], $state[e[1]], $state[e[2]] ]
@@ -115,13 +200,40 @@ def two_to_win(char) # X or O
   moves.uniq
 end
 
+# return 2nd and 3rd coordinates needed to complete 3 in a row
+def two_to_win(char) # X or O
+  moves = []
+
+  WINS.each do |win|
+    row = [ $state[win[0]], $state[win[1]], $state[win[2]] ]
+    if row.count(char) == 1 && row.count(E) == 2
+      row.each do |space|
+        if space == E
+          moves.push(POSITIONS[win[row.index(space)]])
+        end
+      end
+    end
+  end
+
+  moves.uniq
+end
+
 def player_move
   print "\nyour move> "
   move = $stdin.gets.strip
   v = 0
-  
+ 
+  if move == "end" || move == "exit" || move == "e"
+    puts GOODBYE_MSG
+    close_exit
+  end
+
   4.times do
     unless v == 1
+      if move == "end" || move == "exit" || move == "e"
+        puts GOODBYE_MSG
+        close_exit
+      end
 
       if !POSITIONS.include?(move)
         print "\ninvalid move, try again> "
@@ -135,78 +247,125 @@ def player_move
     end
   end
 
-  abort EXIT_MSG unless v == 1
+  unless v == 1
+    puts EXIT_MSG
+    close_exit
+  end
 
   write(move, $piece[:player])
-  board
-  check_for_winner
 end
 
 def computer_move
+  s = $state
   c = $piece[:computer]
   p = $piece[:player]
 
-  while true
-    # this is redundant
-    # if computer goes first then make random move
-    #if $state.uniq.to_s == E
-    #  write(random(POSITIONS), c)
-    #  break
-    #end
+  puts "\ncomputer move:"
 
-    # go for the win?
-    moves = two_to_win(c)
-    if moves.length > 0
-      write(random(moves), c)
-      break
-    end 
-   
-    # keep player from winning?
-    moves = two_to_win(p)
-    if moves.length > 0
-      write(random(moves), c)
-      break
-    end 
+  #TODO: fork attempt if go first
+
+  # block fork
+  if s.count(p) == 1 && (s[0] == p || s[2] == p || s[6] == p || s[8] == p)
+    write("b2", c)  
+    $tally["block fork1"] =+ 1
+
+  # continue block fork - make sure second move is not a corner if player has two opposite corners
+  elsif s.count(p) == 2 && s.count(c) == 1 && s[4] == c && (s[0] == p && s[8] == p) || (s[2] == p && s[6] == p)
+    write(random([ "a2", "b1", "b3", "c2" ]), c)
+    $tally["block fork2"] =+ 1
+  
+  # go for the win
+  elsif (moves = one_to_win(c)).length > 0
+    write(random(moves), c)
+    $tally["win"] =+ 1
+
+  # keep player from winning
+  # TODO: sometimes computer wont do this?!?
+  elsif (moves = one_to_win(p)).length > 0
+    write(random(moves), c)
+    $tally["block player win"] += 1
+  
+  # go for two in a row
+  elsif (moves = two_to_win(c)).length > 0
+    write(random(moves), c)
+    $tally["two in a row"] += 1
+
+  # keep player from attempting two in a row
+  elsif (moves = two_to_win(p)).length > 0
+    write(random(moves), c)
+    $tally["block player two in a row"] += 1
+
+  # make random move
+  else
+    empties = []
     
-    # go for random 2 in a row?
-    # TODO: ...
+    s.each_with_index do |e,i|
+      if e == E
+        empties.push(POSITIONS[i])
+      end
+    end
 
-    # else make random move
-    # TODO: get list of available moves
-    break
+    write(random(empties), c)
+    $tally["random"] += 1
   end
+end
 
+def intro
+  system("clear")
+  puts "\n  Welcome\n\n"
+  sleep 1
+  puts "     To\n\n"
+  sleep 1
+  puts "  T | I | C\n ---+---+---\n  T | A | C\n ---+---+---\n  T | O | E\n\n"
+  sleep 1
+end
+
+def turn
+  yield
   board
   check_for_winner
 end
 
-def main
-  unless ARGV[0] == "debug"
-    system("clear")
-    puts "\n  Welcome\n\n"
-    sleep 1
-    puts "     To\n\n"
-    sleep 1
-    puts "  T | I | C\n ---+---+---\n  T | A | C\n ---+---+---\n  T | O | E\n\n"
-    sleep 1
-  end
-    
-  choose_sides
-
-  case ask("Do you wish to go first", "yes", "no")
-  when "yes"
+def play_starting_with(who) # :player, :computer
+  case who
+  when :player
     board
     
     loop do
-      player_move
-      computer_move
+      turn { player_move }
+      turn { computer_move }
     end
-  when "no"
+  when :computer
     loop do
-      computer_move
-      player_move
+      turn { computer_move }
+      turn { player_move }
     end
   end
+end
+
+def play_and_choose_first
+  case ask("Do you wish to go first", "yes", "no")
+  when "yes"
+    play_starting_with(:player)
+  when "no"
+    play_starting_with(:computer)
+  end
+end
+
+def main
+  case ARG1
+  when "player" # skip intro, player goes first and is X
+    play_starting_with(:player)
+  when "computer" # skip intro, computer goes first and is X
+    play_starting_with(:computer)
+  when "skip" # skip intro
+    choose_sides
+    play_and_choose_first
+  else
+    intro 
+    choose_sides
+    play_and_choose_first
+  end 
 end
 
 main
