@@ -3,7 +3,6 @@
 ARG1 = ARGV[0]
 ARG2 = ARGV[1]
 SCORES = ".scores"
-
 SCORES_FH = File.open(SCORES, "a")
 
 # end all games with this
@@ -57,8 +56,8 @@ WINS = [
 $state = [ E, E, E, E, E, E, E, E, E ]
 $piece = { :player => X, :computer => O }
 $tally = { # for computer AI strategies
-  "block fork1"                => 0,
-  "block fork2"                => 0,
+  "block fork1"               => 0,
+  "block fork2"               => 0,
   "win"                       => 0,
   "block player win"          => 0,
   "two in a row"              => 0,
@@ -161,8 +160,10 @@ def check_for_winner
 
   case winner
   when :player
+    SCORES_FH.puts 1
     end_game("You Win")
   when :computer
+    SCORES_FH.puts 2
     end_game("Computer Wins")
   end
 
@@ -175,7 +176,8 @@ def check_for_winner
       draw_count += 1
     end
   end
-  
+    
+  SCORES_FH.puts 3 if draw_count == 8
   end_game("Draw") if draw_count == 8
 end
 
@@ -225,6 +227,7 @@ def player_move
  
   if move == "end" || move == "exit" || move == "e"
     puts GOODBYE_MSG
+    SCORES_FH.puts 4
     close_exit
   end
 
@@ -232,6 +235,7 @@ def player_move
     unless v == 1
       if move == "end" || move == "exit" || move == "e"
         puts GOODBYE_MSG
+        SCORES_FH.puts 4
         close_exit
       end
 
@@ -264,7 +268,7 @@ def computer_move
 
   #TODO: fork attempt if go first
 
-  # block fork
+  # block fork - player goes first and moved a corner
   if s.count(p) == 1 && (s[0] == p || s[2] == p || s[6] == p || s[8] == p)
     write("b2", c)  
     $tally["block fork1"] =+ 1
