@@ -2,12 +2,29 @@
 
 ARG1 = ARGV[0]
 ARG2 = ARGV[1]
-SCORES = ".scores"
-SCORES_FH = File.open(SCORES, "a")
+HIST = ".history"
+HIST_FH = File.open(HIST, "a")
 
 # end all games with this
 def close_exit
-  SCORES_FH.close
+  HIST_FH.close
+  
+  # display game history
+  h = File.open(HIST).map { |line| line.to_i }
+  puts %Q{ history:
+      player wins: #{h.count(0)}
+    computer wins: #{h.count(1)}
+            draws: #{h.count(2)}
+       surrenders: #{h.count(3)}
+  }
+
+  # TODO: or something like this but using printf
+  #puts "history:"
+  #
+  #[ "player wins", "computer wins", "draws", "surrenders" ].each_with_index do |e,i|
+  #  puts "    #{e}: #{h.count(i)}"
+  #end
+
   exit
 end
 
@@ -31,8 +48,8 @@ if ARG1 == "help" || ARG1 == "info"
 end
 
 if ARG1 == "reset"
-  SCORES_FH.close
-  File.delete(SCORES)
+  HIST_FH.close
+  File.delete(HIST)
   exit
 end
 
@@ -42,7 +59,7 @@ E = " "
 POSITIONS = %w[ a1 a2 a3 b1 b2 b3 c1 c2 c3 ]
 EXIT_MSG = "\n\nyou just can't seem to take tic-tac-toe seriously!\n\n"
 GOODBYE_MSG = "\n\nGoodbye :(\n\n"
-WINS = [ 
+WINS = [ # all winning combinations 
   [ 0, 1, 2 ],
   [ 3, 4, 5 ],
   [ 6, 7, 8 ],
@@ -53,6 +70,7 @@ WINS = [
   [ 2, 4, 6 ]
 ]
 
+# set default game state
 $state = [ E, E, E, E, E, E, E, E, E ]
 $piece = { :player => X, :computer => O }
 $tally = { # for computer AI strategies
@@ -65,6 +83,7 @@ $tally = { # for computer AI strategies
   "random"                    => 0,
 }
 
+# ask player a question and get one of two answers
 def ask(question, a, b)
   print "#{question} (#{a}/#{b})> "
   r = $stdin.gets.strip
@@ -100,7 +119,6 @@ def board
 end
 
 def write(pos, char) # example: ("a1", $piece[:player])
-  # TODO: ensure write to an empty space
   $state[POSITIONS.index(pos)] = char
 end
 
@@ -111,15 +129,8 @@ def random(array)
 end
 
 # map WINS to current $state
-# TODO: refactor everything to use this
 def state_wins
-  sw = []
-  
-  WINS.each do |e|
-    sw.push([ $state[e[0]], $state[e[1]], $state[e[2]] ])
-  end
-
-  sw
+  WINS.map { |win| [ $state[win[0]], $state[win[1]], $state[win[2]] ] }
 end
 
 # TODO: add method to help translate coordinates to positions?
@@ -132,13 +143,12 @@ def choose_sides
   end
 end
 
+# display computer stats in debug mode
 def stats
   puts "\n      computer stats:\n  --+------------"
-  # TODO: sort by ...something
   $tally.each { |k,v| puts "  #{v} | #{k}" }
   puts
 end
-#stats
 
 def end_game(msg)
   puts "\n!!! #{msg} !!!\n\n"
@@ -160,10 +170,10 @@ def check_for_winner
 
   case winner
   when :player
-    SCORES_FH.puts 1
+    HIST_FH.puts 0
     end_game("You Win")
   when :computer
-    SCORES_FH.puts 2
+    HIST_FH.puts 1
     end_game("Computer Wins")
   end
 
@@ -177,7 +187,7 @@ def check_for_winner
     end
   end
     
-  SCORES_FH.puts 3 if draw_count == 8
+  HIST_FH.puts 2 if draw_count == 8
   end_game("Draw") if draw_count == 8
 end
 
@@ -191,7 +201,8 @@ def one_to_win(char) # X or O
   #    moves.push(POSITIONS[e.index(E)])
   #  end
   #end
-
+  
+  # TODO: use state_wins method here
   WINS.each do |e|
     row = [ $state[e[0]], $state[e[1]], $state[e[2]] ]
     if row.count(char) == 2 && row.count(E) == 1
@@ -205,7 +216,8 @@ end
 # return 2nd and 3rd coordinates needed to complete 3 in a row
 def two_to_win(char) # X or O
   moves = []
-
+  
+  # TODO: use state_wins method here
   WINS.each do |win|
     row = [ $state[win[0]], $state[win[1]], $state[win[2]] ]
     if row.count(char) == 1 && row.count(E) == 2
@@ -227,7 +239,7 @@ def player_move
  
   if move == "end" || move == "exit" || move == "e"
     puts GOODBYE_MSG
-    SCORES_FH.puts 4
+    HIST_FH.puts 3
     close_exit
   end
 
@@ -235,7 +247,7 @@ def player_move
     unless v == 1
       if move == "end" || move == "exit" || move == "e"
         puts GOODBYE_MSG
-        SCORES_FH.puts 4
+        HIST_FH.puts 3
         close_exit
       end
 
