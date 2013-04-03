@@ -18,13 +18,6 @@ def close_exit
        surrenders: #{h.count(3)}
   }
 
-  # TODO: or something like this but using printf
-  #puts "history:"
-  #
-  #[ "player wins", "computer wins", "draws", "surrenders" ].each_with_index do |e,i|
-  #  puts "    #{e}: #{h.count(i)}"
-  #end
-
   exit
 end
 
@@ -133,8 +126,6 @@ def state_wins
   WINS.map { |win| [ $state[win[0]], $state[win[1]], $state[win[2]] ] }
 end
 
-# TODO: add method to help translate coordinates to positions?
-
 # assume player is X until chosen otherwise
 def choose_sides
   if ask("Choose a side", "x", "o") == "o"
@@ -194,22 +185,13 @@ end
 # return any 3rd coordinates needed to complete 3 in a row
 def one_to_win(char) # X or O
   moves = []
-  
-  # TODO: this causes computer to overwrite existing spot!?
-  #state_wins.each do |e|
-  #  if e.count(char) == 2 && e.count(E) == 1
-  #    moves.push(POSITIONS[e.index(E)])
-  #  end
-  #end
-  
-  # TODO: use state_wins method here
-  WINS.each do |e|
-    row = [ $state[e[0]], $state[e[1]], $state[e[2]] ]
-    if row.count(char) == 2 && row.count(E) == 1
-      moves.push(POSITIONS[e[row.index(E)]])
+
+  state_wins.each_with_index do |e,i|
+    if e.count(char) == 2 && e.count(E) == 1
+      moves.push(POSITIONS[WINS[i][e.index(E)]])
     end
   end
-
+  
   moves.uniq
 end
 
@@ -217,18 +199,16 @@ end
 def two_to_win(char) # X or O
   moves = []
   
-  # TODO: use state_wins method here
-  WINS.each do |win|
-    row = [ $state[win[0]], $state[win[1]], $state[win[2]] ]
+  state_wins.each_with_index do |row,i|
     if row.count(char) == 1 && row.count(E) == 2
       row.each do |space|
         if space == E
-          moves.push(POSITIONS[win[row.index(space)]])
+          moves.push(POSITIONS[WINS[i][row.index(E)]])
         end
       end
     end
   end
-
+  
   moves.uniq
 end
 
@@ -296,7 +276,6 @@ def computer_move
     $tally["win"] =+ 1
 
   # keep player from winning
-  # TODO: sometimes computer wont do this?!?
   elsif (moves = one_to_win(p)).length > 0
     write(random(moves), c)
     $tally["block player win"] += 1
