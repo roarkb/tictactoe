@@ -5,11 +5,8 @@ ARG2 = ARGV[1]
 HIST = ".history"
 HIST_FH = File.open(HIST, "a")
 
-# end all games with this
-def close_exit
-  HIST_FH.close
-  
-  # display game history
+# display game history
+def history
   h = File.open(HIST).map { |line| line.to_i }
   puts %Q{ history:
       player wins: #{h.count(0)}
@@ -17,32 +14,47 @@ def close_exit
             draws: #{h.count(2)}
        surrenders: #{h.count(3)}
   }
+end
 
+# end all games with this
+def close_exit
+  HIST_FH.close
+  history
   exit
 end
 
-if ARG1 == "help" || ARG1 == "info"
+case ARG1
+when "help"
   puts %Q{  
    USAGE: '#{__FILE__} <optional arg1> <optional arg2>'
   
   arg1:
-    "skip"      => skip intro
-    "player"    => skip intro, choose X and go first
-    "computer"  => skip intro, choose X and computer goes first
-    "help/info" => this menu
+    skip/s      => skip intro
+    player/p    => skip intro, choose X and go first
+    computer/c  => skip intro, choose X and computer goes first
+    reset/r     => reset history
+    history/h   => display history  
+    info/i      => game credits
+    help        => this menu
 
   arg2:
-    "debug" => display computer stats
+    debug => display computer stats
 
-  "end/exit/e" will end the game
+  end/exit/e => surrender
   }
 
-  close_exit
-end
-
-if ARG1 == "reset"
+  exit
+when "history", "h"
+  puts
+  history
+  exit
+when "reset", "r"
   HIST_FH.close
   File.delete(HIST)
+  exit
+when "info", "i"
+  puts "\n   T | I | C\n  ---+---+---\n   T | A | C\n  ---+---+---\n   T | O | E\n\n"
+  puts "   Created by\n Roark Brewster\n     (2013)\n\n" 
   exit
 end
 
@@ -89,8 +101,7 @@ def ask(question, a, b)
   end
 
   unless r == a or r == b
-    puts EXIT_MSG
-    close_exit
+    abort EXIT_MSG
   end
 
   r
@@ -169,17 +180,18 @@ def check_for_winner
   end
 
   # is it a draw?
-  # TODO: detect draw even sooner
   draw_count = 0
-  
+ 
   state_wins.each do |e|
     if e.count(X) > 0 && e.count(O) > 0
       draw_count += 1
     end
   end
-    
-  HIST_FH.puts 2 if draw_count == 8
-  end_game("Draw") if draw_count == 8
+  
+  if draw_count >= 7
+    HIST_FH.puts 2
+    end_game("Draw")
+  end
 end
 
 # return any 3rd coordinates needed to complete 3 in a row
@@ -244,8 +256,7 @@ def player_move
   end
 
   unless v == 1
-    puts EXIT_MSG
-    close_exit
+    abort EXIT_MSG
   end
 
   write(move, $piece[:player])
@@ -257,8 +268,6 @@ def computer_move
   p = $piece[:player]
 
   puts "\ncomputer move:"
-
-  #TODO: fork attempt if go first
 
   # block fork - player goes first and moved a corner
   if s.count(p) == 1 && (s[0] == p || s[2] == p || s[6] == p || s[8] == p)
@@ -347,20 +356,17 @@ def play_and_choose_first
   end
 end
 
-def main
-  case ARG1
-  when "player" # skip intro, player goes first and is X
-    play_starting_with(:player)
-  when "computer" # skip intro, computer goes first and is X
-    play_starting_with(:computer)
-  when "skip" # skip intro
-    choose_sides
-    play_and_choose_first
-  else
-    intro 
-    choose_sides
-    play_and_choose_first
-  end 
+# main
+case ARG1
+when "player", "p" # skip intro, player goes first and is X
+  play_starting_with(:player)
+when "computer", "c" # skip intro, computer goes first and is X
+  play_starting_with(:computer)
+when "skip", "s" # skip intro
+  choose_sides
+  play_and_choose_first
+else
+  intro 
+  choose_sides
+  play_and_choose_first
 end
-
-main
