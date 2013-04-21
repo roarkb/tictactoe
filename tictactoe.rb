@@ -1,63 +1,7 @@
 #!/usr/bin/env ruby
 
-ARG1 = ARGV[0]
-ARG2 = ARGV[1]
 HIST = ".history"
 HIST_FH = File.open(HIST, "a")
-
-# display game history
-def history
-  h = File.open(HIST).map { |line| line.to_i }
-  puts %Q{ history:
-      player wins: #{h.count(0)}
-    computer wins: #{h.count(1)}
-            draws: #{h.count(2)}
-       surrenders: #{h.count(3)}
-  }
-end
-
-# end all games with this
-def close_exit
-  HIST_FH.close
-  history
-  exit
-end
-
-case ARG1
-when "help"
-  puts %Q{  
-   USAGE: '#{__FILE__} <optional arg1> <optional arg2>'
-  
-  arg1:
-    skip/s      => skip intro
-    player/p    => skip intro, choose X and go first
-    computer/c  => skip intro, choose X and computer goes first
-    reset/r     => reset history
-    history/h   => display history  
-    info/i      => game credits
-    help        => this menu
-
-  arg2:
-    debug => display computer stats
-
-  end/exit/e => surrender
-  }
-
-  exit
-when "history", "h"
-  puts
-  history
-  exit
-when "reset", "r"
-  HIST_FH.close
-  File.delete(HIST)
-  exit
-when "info", "i"
-  puts "\n   T | I | C\n  ---+---+---\n   T | A | C\n  ---+---+---\n   T | O | E\n\n"
-  puts "   Created by\n Roark Brewster\n     (2013)\n\n" 
-  exit
-end
-
 X = "X"
 O = "O"
 E = " "
@@ -87,6 +31,24 @@ $tally = { # for computer AI strategies
   "block player two in a row" => 0,
   "random"                    => 0,
 }
+
+# display game history
+def history
+  h = File.open(HIST).map { |line| line.to_i }
+  puts %Q{ history:
+      player wins: #{h.count(0)}
+    computer wins: #{h.count(1)}
+            draws: #{h.count(2)}
+       surrenders: #{h.count(3)}
+  }
+end
+
+# end all games with this
+def close_exit
+  HIST_FH.close
+  history
+  exit
+end
 
 # ask player a question and get one of two answers
 def ask(question, a, b)
@@ -145,53 +107,17 @@ def choose_sides
   end
 end
 
-# display computer stats in debug mode
-def stats
-  puts "\n      computer stats:\n  --+------------"
-  $tally.each { |k,v| puts "  #{v} | #{k}" }
-  puts
-end
-
 def end_game(msg)
   puts "\n!!! #{msg} !!!\n\n"
-  stats if ARG2 == "debug"
+  
+  # display computer stats in debug mode
+  if ARGV[1] == "debug"
+    puts "\n      computer stats:\n  --+----------------"
+    $tally.each { |k,v| puts "  #{v} | #{k}" }
+    puts
+  end
+
   close_exit
-end
-
-def check_for_winner
-  winner = nil
-  
-  state_wins.each do |e|
-    case e
-    when [ X, X, X ]
-      winner = $piece.invert[X]
-    when [ O, O, O ]
-      winner = $piece.invert[O]
-    end
-  end
-
-  case winner
-  when :player
-    HIST_FH.puts 0
-    end_game("You Win")
-  when :computer
-    HIST_FH.puts 1
-    end_game("Computer Wins")
-  end
-
-  # is it a draw?
-  draw_count = 0
- 
-  state_wins.each do |e|
-    if e.count(X) > 0 && e.count(O) > 0
-      draw_count += 1
-    end
-  end
-  
-  if draw_count >= 7
-    HIST_FH.puts 2
-    end_game("Draw")
-  end
 end
 
 # return any 3rd coordinates needed to complete 3 in a row
@@ -267,10 +193,11 @@ def computer_move
   c = $piece[:computer]
   p = $piece[:player]
 
+  # TODO: print move here
   puts "\ncomputer move:"
 
   # block fork - player goes first and moved a corner
-  if s.count(p) == 1 && (s[0] == p || s[2] == p || s[6] == p || s[8] == p)
+  if s.count(p) == 1 && (s[0] == p || s[1] == p || s[2] == p || s[3] == p || s[5] == p || s[6] == p || s[7] == p || s[8] == p)
     write("b2", c)  
     $tally["block fork1"] =+ 1
 
@@ -278,7 +205,9 @@ def computer_move
   elsif s.count(p) == 2 && s.count(c) == 1 && s[4] == c && (s[0] == p && s[8] == p) || (s[2] == p && s[6] == p)
     write(random([ "a2", "b1", "b3", "c2" ]), c)
     $tally["block fork2"] =+ 1
-  
+ 
+  # TODO: stick to corner moves to block further forks (thanks Srihari)
+
   # go for the win
   elsif (moves = one_to_win(c)).length > 0
     write(random(moves), c)
@@ -314,20 +243,44 @@ def computer_move
   end
 end
 
-def intro
-  system("clear")
-  puts "\n  Welcome\n\n"
-  sleep 1
-  puts "     To\n\n"
-  sleep 1
-  puts "  T | I | C\n ---+---+---\n  T | A | C\n ---+---+---\n  T | O | E\n\n"
-  sleep 1
-end
-
 def turn
   yield
   board
-  check_for_winner
+  
+  # check for winner
+  winner = nil
+  
+  state_wins.each do |e|
+    case e
+    when [ X, X, X ]
+      winner = $piece.invert[X]
+    when [ O, O, O ]
+      winner = $piece.invert[O]
+    end
+  end
+
+  case winner
+  when :player
+    HIST_FH.puts 0
+    end_game("You Win")
+  when :computer
+    HIST_FH.puts 1
+    end_game("Computer Wins")
+  end
+
+  # is it a draw?
+  draw_count = 0
+ 
+  state_wins.each do |e|
+    if e.count(X) > 0 && e.count(O) > 0
+      draw_count += 1
+    end
+  end
+  
+  if draw_count >= 7
+    HIST_FH.puts 2
+    end_game("Draw")
+  end
 end
 
 def play_starting_with(who) # :player, :computer
@@ -357,7 +310,39 @@ def play_and_choose_first
 end
 
 # main
-case ARG1
+case ARGV[0]
+when "help"
+  puts %Q{  
+   USAGE: '#{__FILE__} <optional arg1> <optional arg2>'
+  
+  arg1:
+    skip/s     => skip intro
+    player/p   => skip intro, choose X and go first
+    computer/c => skip intro, choose X and computer goes first
+    reset/r    => reset history
+    history/h  => display history  
+    info/i     => game credits
+    help       => this menu
+
+  arg2:
+    debug      => display computer stats
+
+  end/exit/e   => surrender
+  }
+
+  exit
+when "history", "h"
+  puts
+  history
+  exit
+when "reset", "r"
+  HIST_FH.close
+  File.delete(HIST)
+  exit
+when "info", "i"
+  puts "\n   T | I | C\n  ---+---+---\n   T | A | C\n  ---+---+---\n   T | O | E\n\n"
+  puts "   Created by\n Roark Brewster\n     (2013)\n\n" 
+  exit
 when "player", "p" # skip intro, player goes first and is X
   play_starting_with(:player)
 when "computer", "c" # skip intro, computer goes first and is X
@@ -366,7 +351,13 @@ when "skip", "s" # skip intro
   choose_sides
   play_and_choose_first
 else
-  intro 
+  system("clear")
+  puts "\n  Welcome\n\n"
+  sleep 1
+  puts "     To\n\n"
+  sleep 1
+  puts "  T | I | C\n ---+---+---\n  T | A | C\n ---+---+---\n  T | O | E\n\n"
+  sleep 1
   choose_sides
   play_and_choose_first
 end
