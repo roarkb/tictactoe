@@ -193,7 +193,7 @@ def computer_move
   c = $piece[:computer]
   p = $piece[:player]
 
-  # block fork - player goes first and moved a corner
+  # block fork - if going second, move center if you can
   if s.count(p) == 1 && (s[4] != p)
     m = "b2"
     $tally["block fork1"] =+ 1
