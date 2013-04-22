@@ -197,8 +197,7 @@ def computer_move
   puts "\ncomputer move:"
 
   # block fork - player goes first and moved a corner
-  # TODO: shorten this to simply look for non-center
-  if s.count(p) == 1 && (s[0] == p || s[1] == p || s[2] == p || s[3] == p || s[5] == p || s[6] == p || s[7] == p || s[8] == p)
+  if s.count(p) == 1 && (s[4] != p)
     write("b2", c)  
     $tally["block fork1"] =+ 1
 
