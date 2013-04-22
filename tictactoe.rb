@@ -193,39 +193,36 @@ def computer_move
   c = $piece[:computer]
   p = $piece[:player]
 
-  # TODO: print move here
-  puts "\ncomputer move:"
-
   # block fork - player goes first and moved a corner
   if s.count(p) == 1 && (s[4] != p)
-    write("b2", c)  
+    m = "b2"
     $tally["block fork1"] =+ 1
 
   # continue block fork - make sure second move is not a corner if player has two opposite corners
   elsif s.count(p) == 2 && s.count(c) == 1 && s[4] == c && (s[0] == p && s[8] == p) || (s[2] == p && s[6] == p)
-    write(random([ "a2", "b1", "b3", "c2" ]), c)
+    m = random([ "a2", "b1", "b3", "c2" ])
     $tally["block fork2"] =+ 1
  
   # TODO: stick to corner moves to block further forks (thanks Srihari)
 
   # go for the win
   elsif (moves = one_to_win(c)).length > 0
-    write(random(moves), c)
+    m = random(moves)
     $tally["win"] =+ 1
 
   # keep player from winning
   elsif (moves = one_to_win(p)).length > 0
-    write(random(moves), c)
+    m = random(moves)
     $tally["block player win"] += 1
   
   # go for two in a row
   elsif (moves = two_to_win(c)).length > 0
-    write(random(moves), c)
+    m = random(moves)
     $tally["two in a row"] += 1
 
   # keep player from attempting two in a row
   elsif (moves = two_to_win(p)).length > 0
-    write(random(moves), c)
+    m = random(moves)
     $tally["block player two in a row"] += 1
 
   # make random move
@@ -238,9 +235,12 @@ def computer_move
       end
     end
 
-    write(random(empties), c)
+    m = random(empties)
     $tally["random"] += 1
   end
+  
+  puts "\ncomputer move: #{m}"
+  write(m, c)
 end
 
 def turn
