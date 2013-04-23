@@ -15,7 +15,7 @@ $ ./tictactoe.rb info
 
 $ ./tictactoe.rb help
   
-   USAGE: './tictactoe.rb <optional arg1> <optional arg2>'
+  USAGE: './tictactoe.rb <optional arg1> <optional arg2>'
   
   arg1:
     skip/s     => skip intro

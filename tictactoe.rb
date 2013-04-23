@@ -1,5 +1,34 @@
 #!/usr/bin/env ruby
 
+
+#    T | I | C
+#   ---+---+---
+#    T | A | C
+#   ---+---+---
+#    T | O | E
+#
+#    Created by
+#  Roark Brewster
+#      (2013)
+#
+#
+#  USAGE: './tictactoe.rb <optional arg1> <optional arg2>'
+#  
+#  arg1:
+#    skip/s     => skip intro
+#    player/p   => skip intro, choose X and go first
+#    computer/c => skip intro, choose X and computer goes first
+#    reset/r    => reset history
+#    history/h  => display history
+#    info/i     => game credits
+#    help       => this menu
+#
+#  arg2:
+#    debug      => display computer stats
+#
+#  end/exit/e   => surrender
+
+
 HIST = ".history"
 HIST_FH = File.open(HIST, "a")
 X = "X"
@@ -332,7 +361,7 @@ end
 case ARGV[0]
 when "help"
   puts %Q{  
-   USAGE: '#{__FILE__} <optional arg1> <optional arg2>'
+  USAGE: '#{__FILE__} <optional arg1> <optional arg2>'
   
   arg1:
     skip/s     => skip intro
