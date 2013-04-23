@@ -6,6 +6,8 @@ X = "X"
 O = "O"
 E = " "
 POSITIONS = %w[ a1 a2 a3 b1 b2 b3 c1 c2 c3 ]
+CORNERS = %w[ a1 a3 c1 c3 ]
+NON_CORNERS = %w[ a2 b1 b3 c2 ]
 EXIT_MSG = "\n\nyou just can't seem to take tic-tac-toe seriously!\n\n"
 GOODBYE_MSG = "\n\nGoodbye :(\n\n"
 WINS = [ # all winning combinations 
@@ -150,6 +152,18 @@ def two_to_win(char) # X or O
   moves.uniq
 end
 
+# extract all corner moves and return them, return original array if no corners
+def favor_corners(moves) # array of moves: [ a1, b2, c3, ... ]
+  a = []
+  moves.each { |e| a.push(e) if CORNERS.include?(e) }
+
+  if a.length == 0
+    return moves
+  else
+    return a
+  end
+end
+
 def player_move
   print "\nyour move> "
   move = $stdin.gets.strip
@@ -196,34 +210,32 @@ def computer_move
   # block fork - if going second, move center if you can
   if s.count(p) == 1 && (s[4] != p)
     m = "b2"
-    $tally["block fork1"] =+ 1
+    t = "block fork1"
 
-  # continue block fork - make sure second move is not a corner if player has two opposite corners
+  # continue block fork - make sure second move is not a corner if player has two diagnal opposite corners
   elsif s.count(p) == 2 && s.count(c) == 1 && s[4] == c && (s[0] == p && s[8] == p) || (s[2] == p && s[6] == p)
-    m = random([ "a2", "b1", "b3", "c2" ])
-    $tally["block fork2"] =+ 1
- 
-  # TODO: stick to corner moves to block further forks (thanks Srihari)
+    m = random(NON_CORNERS)
+    t = "block fork2"
 
   # go for the win
   elsif (moves = one_to_win(c)).length > 0
-    m = random(moves)
-    $tally["win"] =+ 1
+    m = random(favor_corners(moves))
+    t = "win"
 
   # keep player from winning
   elsif (moves = one_to_win(p)).length > 0
-    m = random(moves)
-    $tally["block player win"] += 1
+    m = random(favor_corners(moves))
+    t = "block player win"
   
   # go for two in a row
   elsif (moves = two_to_win(c)).length > 0
-    m = random(moves)
-    $tally["two in a row"] += 1
+    m = random(favor_corners(moves))
+    t = "two in a row"
 
   # keep player from attempting two in a row
   elsif (moves = two_to_win(p)).length > 0
-    m = random(moves)
-    $tally["block player two in a row"] += 1
+    m = random(favor_corners(moves))
+    t = "block player two in a row"
 
   # make random move
   else
@@ -236,11 +248,18 @@ def computer_move
     end
 
     m = random(empties)
-    $tally["random"] += 1
+    t = "random"
   end
-  
-  puts "\ncomputer move: #{m}"
+ 
+  # move
+  if ARGV[1] == "debug"
+    puts "\ncomputer move: #{m} (#{t})"
+  else
+    puts "\ncomputer move: #{m}"
+  end
+
   write(m, c)
+  $tally[t] =+ 1
 end
 
 def turn
