@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-
 #    T | I | C
 #   ---+---+---
 #    T | A | C
@@ -27,7 +26,6 @@
 #    debug      => display computer stats
 #
 #  end/exit/e   => surrender
-
 
 HIST = ".history"
 HIST_FH = File.open(HIST, "a")
@@ -187,9 +185,9 @@ def favor_corners(moves) # array of moves: [ a1, b2, c3, ... ]
   moves.each { |e| a.push(e) if CORNERS.include?(e) }
 
   if a.length == 0
-    return moves
+    moves
   else
-    return a
+    a
   end
 end
 
@@ -237,7 +235,7 @@ def computer_move
   p = $piece[:player]
 
   # block fork - if going second, move center if you can
-  if s.count(p) == 1 && (s[4] != p)
+  if s.count(p) == 1 && (s[4] == E)
     m = "b2"
     t = "block fork1"
 
@@ -282,9 +280,9 @@ def computer_move
  
   # move
   if ARGV[1] == "debug"
-    puts "\ncomputer move: #{m} (#{t})"
+    puts "\ncomputer moves: #{m} (#{t})"
   else
-    puts "\ncomputer move: #{m}"
+    puts "\ncomputer moves: #{m}"
   end
 
   write(m, c)
@@ -316,7 +314,7 @@ def turn
     end_game("Computer Wins")
   end
 
-  # is it a draw?
+  # detect a draw?
   draw_count = 0
  
   state_wins.each do |e|
