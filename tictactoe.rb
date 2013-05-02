@@ -314,7 +314,7 @@ def turn
     end_game("Computer Wins")
   end
 
-  # detect a draw?
+  # detect a draw
   draw_count = 0
  
   state_wins.each do |e|
@@ -389,9 +389,9 @@ when "info", "i"
   puts "\n   T | I | C\n  ---+---+---\n   T | A | C\n  ---+---+---\n   T | O | E\n\n"
   puts "   Created by\n Roark Brewster\n     (2013)\n\n" 
   exit
-when "player", "p" # skip intro, player goes first and is X
+when "player", "p" # skip intro, player is X. player goes first
   play_starting_with(:player)
-when "computer", "c" # skip intro, computer goes first and is X
+when "computer", "c" # skip intro, player is X, computer goes first
   play_starting_with(:computer)
 when "skip", "s" # skip intro
   choose_sides
